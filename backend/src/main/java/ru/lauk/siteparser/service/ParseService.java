@@ -6,6 +6,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Service;
 
@@ -38,9 +39,19 @@ public class ParseService {
         return siteCode.toString();
     }
 
+    public String hardParse(String uri) {
+        System.setProperty("webdriver.chrome.driver", "backend/chromedriver_win32/chromedriver.exe");//TODO задекларировать глобальной переменной
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+        WebDriver webDriver = new ChromeDriver(options);
+        webDriver.get(uri);
+        Document doc = Jsoup.parse(webDriver.getPageSource());
+        return doc.toString();
+    }
+
     public void leranParse() throws Exception {
         String url = "https://www.leran.pro/";
-        System.setProperty("webdriver.chrome.driver", "chromedriver_win32/chromedriver.exe");
+        System.setProperty("webdriver.chrome.driver", "backend/chromedriver_win32/chromedriver.exe");
         WebDriver webDriver = new ChromeDriver();
         webDriver.get(url);//TODO первая страница
         Document doc = Jsoup.parse(webDriver.getPageSource());

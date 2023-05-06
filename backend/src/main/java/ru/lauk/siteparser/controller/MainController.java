@@ -27,4 +27,9 @@ public class MainController {
         }
     }
 
+    @RequestMapping("parse/hard")
+    public ResponseEntity<String> getPageHardCode(@RequestParam String uri) {
+        return ResponseEntity.ok(parseService.hardParse(uri));
+    }
+
 }
