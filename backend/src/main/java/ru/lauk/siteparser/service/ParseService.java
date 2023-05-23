@@ -1,5 +1,6 @@
 package ru.lauk.siteparser.service;
 
+import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -19,9 +20,10 @@ import java.util.regex.Pattern;
 
 @EnableScheduling
 @Service
+@Log4j2
 public class ParseService {
 
-    public String simpleParse(String parsedUrl) throws IOException {
+    public String parse(String parsedUrl) throws IOException {
         URL site = new URL(parsedUrl);
         URLConnection connection = site.openConnection();
         StringBuilder siteCode = new StringBuilder();
@@ -39,14 +41,18 @@ public class ParseService {
         return siteCode.toString();
     }
 
-    public String hardParse(String uri) {
-        System.setProperty("webdriver.chrome.driver", "backend/chromedriver_win32/chromedriver.exe");//TODO задекларировать глобальной переменной
+    public String simpleParse(String uri) {
         ChromeOptions options = new ChromeOptions();
+        String result;
         options.addArguments("--remote-allow-origins=*");
         WebDriver webDriver = new ChromeDriver(options);
+        log.info("Begin parsing uri - {}", uri);
         webDriver.get(uri);
-        Document doc = Jsoup.parse(webDriver.getPageSource());
-        return doc.toString();
+        log.info("End parsing uri - {}", uri);
+        result = webDriver.getPageSource();
+        webDriver.quit();
+//        Document doc = Jsoup.parse(webDriver.getPageSource());
+        return result;
     }
 
     public void leranParse() throws Exception {

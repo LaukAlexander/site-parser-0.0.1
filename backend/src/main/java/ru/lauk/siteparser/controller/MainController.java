@@ -1,13 +1,20 @@
 package ru.lauk.siteparser.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.lauk.siteparser.service.ParseService;
 
-import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Collections;
 
 @RequestMapping("main")
 @RestController
@@ -16,20 +23,15 @@ public class MainController {
 
     private final ParseService parseService;
 
-    @RequestMapping("parse")
+    @GetMapping(value = "parse/simple", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> getPageCode(@RequestParam String uri) {
         try {
             return ResponseEntity.ok(parseService.simpleParse(uri));
-        } catch (IOException e) {
+        } catch (Exception e) {
             return ResponseEntity
                     .internalServerError()
                     .body("{\"error\": \"" + e.getMessage() + "\"}");
         }
-    }
-
-    @RequestMapping("parse/hard")
-    public ResponseEntity<String> getPageHardCode(@RequestParam String uri) {
-        return ResponseEntity.ok(parseService.hardParse(uri));
     }
 
 }

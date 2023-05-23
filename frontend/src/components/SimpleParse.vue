@@ -3,27 +3,28 @@
     <h1>Simple Parsing</h1>
       <input v-model="uri">
       <button @click="sentToParse">sent</button>
-      <p>{{this.parseResult}}</p>
+      <pre>
+          <code>{{ parseResult }}</code>
+      </pre>
   </div>
 </template>
 
 <script>
-import axios from "axios";
 
 export default {
     name: 'SimpleParse',
     data() {
         return {
             uri: '',
-            parseResult: '',
-            backUrl: 'http://localhost:15151'
+            parseResult: ''
         }
     },
     methods: {
         sentToParse() {
-            axios.get(this.backUrl + '/main/parse?uri=' + this.uri).then(response => this.parseResult = response);
+            this.axios.get(this.backUrl + 'main/parse/simple?uri=' + this.uri)
+                .then(response => this.parseResult = response.data)
+                .catch(error => this.parseResult = error.message);
             console.log(this.parseResult);
-            console.log(this.backUrl);
         }
     }
 }
