@@ -5,54 +5,133 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import org.openqa.selenium.interactions.Action;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.interactions.Mouse;
+import org.openqa.selenium.interactions.touch.TouchActions;
+import org.openqa.selenium.support.pagefactory.ByAll;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-@EnableScheduling
+/**
+ * Parsing process control class
+ */
 @Service
 @Log4j2
 public class ParseService {
 
-    public String parse(String parsedUrl) throws IOException {
-        URL site = new URL(parsedUrl);
-        URLConnection connection = site.openConnection();
-        StringBuilder siteCode = new StringBuilder();
-
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(connection.getInputStream()))) {
-            while (reader.ready()) {
-                siteCode.append(reader.readLine());
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw e;
-        }
-
-        return siteCode.toString();
+    /**
+     * Simple parse only one page without any handling
+     * @param uri - page full address for parsing
+     * @return text format page representation
+     */
+    public String simpleParse(String uri) {
+        WebDriver webDriver = getWebDriverByUri(uri);
+        String result = webDriver.getPageSource();
+        webDriver.quit();
+        return result;
     }
 
-    public String simpleParse(String uri) {
+    /**
+     *
+     * @param uri
+     * @return
+     */
+    private WebDriver getWebDriverByUri(String uri) {
         ChromeOptions options = new ChromeOptions();
-        String result;
+        WebDriver webDriver;
+
         options.addArguments("--remote-allow-origins=*");
-        WebDriver webDriver = new ChromeDriver(options);
-        log.info("Begin parsing uri - {}", uri);
+        webDriver = new ChromeDriver(options);
+
+        log.info("Beginning parsing process for uri - {}", uri);
         webDriver.get(uri);
-        log.info("End parsing uri - {}", uri);
-        result = webDriver.getPageSource();
-        webDriver.quit();
-//        Document doc = Jsoup.parse(webDriver.getPageSource());
-        return result;
+        log.info("Ended parsing process for uri - {}", uri);
+
+        return webDriver;
+    }
+
+    /**
+     * Здесь пока я разрабаотываю план как лучше сделатьнастраиваемую систему
+     */
+    public String parseExperiment(String uri) throws Exception {
+        ChromeDriver driver;
+        String pageSource;
+        Element body;
+
+        try {
+            driver = (ChromeDriver) getWebDriverByUri(uri);
+        } catch (Exception e) {
+            String errorMassage = String.format("Getting resource main page " +
+                    "\"%s\" ending with exception", uri);
+            log.error(errorMassage, e);
+            throw new Exception(errorMassage);
+        }
+        pageSource = driver.getPageSource();
+        body = Jsoup.parse(pageSource);
+
+        List<WebElement> elements = driver.findElements(By.tagName("a"));
+        WebElement regionChangeButtonElement = elements.stream()
+                .filter(e -> e.getAttribute("class").equals("link " +
+                        "link_size_14 link_underline_disabled " +
+                        "link_valign_middle ajax-html_on-click " +
+                        "indicator_type_header-location-change " +
+                        "header__location-change-link ajax-html indicator"))
+                .findFirst().orElse(null);
+        regionChangeButtonElement.click();
+
+        List<Element> jsoupElements;
+        int count = 0;
+
+        while(true) {
+            jsoupElements = Jsoup.parse(driver.getPageSource())
+                    .body()
+                    .getElementsByAttributeValue("class", "text  region-select__city");
+            count++;
+            if (count == 20) {
+                throw new Exception("time out");
+            } else if (jsoupElements.size() == 0) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ie) {
+                    log.error(ie);
+                }
+            } else {
+                break;
+            }
+        }
+
+        Map<String, String> regionMap = new HashMap<>();
+
+        for (Element spanTag : jsoupElements) {
+            String regionId = spanTag.attributes().get("data-region_id");
+            String regionName = spanTag.text();
+
+            if (regionId.trim().isEmpty() ||
+                    regionName.trim().isEmpty() ||
+                    regionMap.containsKey(regionId)) {
+                continue;
+            }
+
+            regionMap.put(regionId, regionName);
+        }
+
+        driver.quit();
+
+        return regionMap.toString();
     }
 
     public void leranParse() throws Exception {

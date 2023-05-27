@@ -34,4 +34,17 @@ public class MainController {
         }
     }
 
+    @GetMapping(value = "parse/experiment")
+    public ResponseEntity<String> parseExperiment(@RequestParam String uri) {
+        try {
+            return ResponseEntity.ok(parseService.parseExperiment(uri));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .internalServerError()
+                    .body("{\"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+
+
 }
